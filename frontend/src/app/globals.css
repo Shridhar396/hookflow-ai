@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #121212;
+  --color-brand-panel: #1e1e1e;
+  --color-brand-panel-light: #2a2a2a;
+  
+  --color-accent-amber: #ffb800;
+  --color-accent-amber-hover: #e0a200;
+  --color-accent-neon: #00ff66;
+  --color-accent-neon-hover: #00d957;
+  
+  --color-artlist-dark: #080808;
+  --color-artlist-gray: #8f8f8f;
+  --color-artlist-border: #2e2e2e;
+}
+
+:root {
+  --background: #121212;
+  --foreground: #f5f5f7;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Custom Webkit Scrollbars for premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Custom styling for sleek glass containers */
+.glass-panel {
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-gradient-amber {
+  background: linear-gradient(135deg, #fff 30%, #ffb800 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-neon {
+  background: linear-gradient(135deg, #fff 30%, #00ff66 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

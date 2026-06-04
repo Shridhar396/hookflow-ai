@@ -1,0 +1,10 @@
+streamlit
+yt-dlp
+moviepy
+google-genai
+requests
+imageio-ffmpeg
+fastapi
+uvicorn
+python-multipart
+stripe

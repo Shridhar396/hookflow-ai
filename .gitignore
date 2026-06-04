@@ -1,0 +1,29 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Local environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temp and output files
+temp/
+test_output/
+bin/
+*.mp4
+*.srt
+*.m4a
+temp_title.txt
+sub_test_out.mp4
+subs_test.srt
+
+# Node / Frontend dependencies & builds
+node_modules/
+.next/
+out/
+build/
+.vercel/
