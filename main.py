@@ -61,6 +61,7 @@ class RenderRequest(BaseModel):
     title: str
     api_key: Optional[str] = None
     model: str = "gemini-2.5-flash"
+    highlight_color: Optional[str] = "Neon Yellow"
 
 # Stripe Simulation Models
 class CheckoutSessionRequest(BaseModel):
@@ -163,7 +164,8 @@ def post_render(req: RenderRequest):
             title_text=req.title.upper(),
             api_key=api_key,
             model=req.model,
-            output_path=final_output_path
+            output_path=final_output_path,
+            highlight_color=req.highlight_color
         )
         
         return {

@@ -81,6 +81,7 @@ export default function HookFlowApp() {
   const [apiKey, setApiKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [numClips, setNumClips] = useState(3);
+  const [highlightColor, setHighlightColor] = useState("Neon Yellow");
   const [showSettings, setShowSettings] = useState(false);
 
   // Analysis States
@@ -275,7 +276,8 @@ export default function HookFlowApp() {
           end_seconds: clip.end_seconds,
           title: clip.suggested_title || clip.title,
           api_key: apiKey || null,
-          model: selectedModel
+          model: selectedModel,
+          highlight_color: highlightColor
         })
       });
 
@@ -498,7 +500,7 @@ export default function HookFlowApp() {
 
         {/* Studio Options Panel */}
         {showSettings && (
-          <div className="mb-8 bg-brand-panel border border-artlist-border rounded-xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-2xl relative overflow-hidden">
+          <div className="mb-8 bg-brand-panel border border-artlist-border rounded-xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 shadow-2xl relative overflow-hidden">
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">Gemini Model</label>
               <select
@@ -523,6 +525,23 @@ export default function HookFlowApp() {
                 className="bg-brand-bg border border-artlist-border rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-accent-neon"
               />
               <span className="text-[10px] text-gray-500 font-medium">Leave empty to use backend's GEMINI_API_KEY value.</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">Caption Highlight Color</label>
+              <select
+                value={highlightColor}
+                onChange={(e) => setHighlightColor(e.target.value)}
+                className="bg-brand-bg border border-artlist-border rounded-lg py-2 px-3 text-sm text-white font-medium focus:outline-none focus:border-accent-neon"
+              >
+                <option value="Neon Yellow">Neon Yellow</option>
+                <option value="Neon Green">Neon Green</option>
+                <option value="Neon Pink">Neon Pink</option>
+                <option value="Cyan">Cyan</option>
+                <option value="Vibrant Orange">Vibrant Orange</option>
+                <option value="Multi-Color Cycle">Multi-Color Cycle</option>
+              </select>
+              <span className="text-[10px] text-gray-500 font-medium">Select color for the active subtitle word.</span>
             </div>
 
             <div className="flex flex-col gap-2">
