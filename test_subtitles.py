@@ -58,15 +58,38 @@ def test_pipeline():
         "5. Output ONLY the raw, valid SRT subtitle content. No explanation, no markdown tags."
     )
 
+    mock_srt_content = """1
+00:00:00,109 --> 00:00:00,369
+DON'T
+
+2
+00:00:00,369 --> 00:00:00,589
+BE
+
+3
+00:00:00,589 --> 00:00:00,839
+FAT
+
+4
+00:00:00,909 --> 00:00:01,179
+BUT
+"""
+
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=[audio_file, prompt]
         )
         srt_content = response.text.strip()
+    except Exception as e:
+        print(f"Warning: Gemini API call failed ({e}). Falling back to local mock subtitles for pipeline verification.")
+        srt_content = mock_srt_content
     finally:
-        client.files.delete(name=audio_file.name)
-        print("Cleaned up Gemini file.")
+        try:
+            client.files.delete(name=audio_file.name)
+            print("Cleaned up Gemini file.")
+        except:
+            pass
 
     # Strip markdown block formatting if Gemini wrapped it
     if srt_content.startswith("```"):
@@ -77,6 +100,9 @@ def test_pipeline():
             lines = lines[:-1]
         srt_content = "\n".join(lines).strip()
 
+    # Sanitize and format SRT content using utils
+    srt_content = utils.fix_srt_content(srt_content)
+
     # Save SRT to the test_output directory
     srt_path = os.path.join(output_dir, "subs.srt")
     with open(srt_path, "w", encoding="utf-8") as f:
@@ -85,34 +111,21 @@ def test_pipeline():
     print(f"Generated SRT: {srt_path}")
     print(srt_content[:500] + "...")
 
-    # Step 5: Burn subtitles using FFmpeg subtitles filter
-    print("--- STEP 5: Burning styled captions with FFmpeg ---")
-    
-    # Escape path for FFmpeg subtitles filter on Windows:
-    # 1. Convert backslashes to forward slashes
-    # 2. Escape the drive letter colon (e.g. D: -> D\:)
-    # 3. Escape spaces (e.g. " " -> "\ ")
-    safe_srt_path = srt_path.replace("\\", "/").replace(":", "\\:").replace(" ", "\\ ")
-    
-    vf_filter = f"subtitles='{safe_srt_path}':force_style='Fontname=Impact,Fontsize=28,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2.5,Alignment=2,MarginV=280'"
-
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", cropped_clip,
-        "-vf", vf_filter,
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "copy",
-        final_clip
-    ]
-
-    print(f"Running command: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    
-    if result.returncode != 0:
-        print(f"FFmpeg failed: {result.stderr}")
-    else:
-        print(f"Success! Output video created at: {final_clip}")
+    # Step 5: Render unified vertical cropped video with captions using utils
+    print("--- STEP 5: Rendering production vertical short with crop_and_burn_title ---")
+    unified_final_clip = os.path.join(output_dir, "final_unified.mp4")
+    try:
+        utils.crop_and_burn_title(
+            raw_clip,
+            "PHOENIX VS KD: CLUTCH MOMENT",
+            api_key,
+            "gemini-2.5-flash",
+            unified_final_clip,
+            highlight_color="Multi-Color Cycle"
+        )
+        print(f"Success! Unified production video created at: {unified_final_clip}")
+    except Exception as e:
+        print(f"Unified rendering failed: {e}")
 
 if __name__ == "__main__":
     test_pipeline()

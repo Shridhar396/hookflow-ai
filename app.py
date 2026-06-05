@@ -227,9 +227,10 @@ selected_model = st.sidebar.selectbox(
 
 api_key = st.sidebar.text_input(
     "Gemini API Key",
-    value=os.environ.get("GEMINI_API_KEY", ""),
+    value="",
     type="password",
-    help="Leave blank if GEMINI_API_KEY environment variable is set."
+    placeholder="AIzaSy...",
+    help="Enter your personal Gemini API Key. For security, default or backend API keys are disabled."
 )
 
 num_clips = st.sidebar.slider(
@@ -238,6 +239,13 @@ num_clips = st.sidebar.slider(
     max_value=5,
     value=3,
     help="Select how many viral shorts segments you want the AI to extract."
+)
+
+highlight_color = st.sidebar.selectbox(
+    "Subtitle Highlight Color",
+    ["Neon Yellow", "Neon Green", "Neon Pink", "Cyan", "Vibrant Orange", "Multi-Color Cycle"],
+    index=0,
+    help="Select the color used to highlight the currently spoken word, or choose 'Multi-Color Cycle' to alternate colors."
 )
 
 ffmpeg_status = get_ffmpeg_status()
@@ -292,7 +300,7 @@ with col_left:
             c_thumb, c_meta = st.columns([4, 6])
             with c_thumb:
                 if info.get('thumbnail'):
-                    st.image(info['thumbnail'], use_column_width=True)
+                    st.image(info['thumbnail'], use_container_width=True)
             with c_meta:
                 st.markdown(f"**Title:** {info['title']}")
                 mins = f"{info['duration'] // 60}m {info['duration'] % 60}s" if info['duration'] else "Unknown"
@@ -303,22 +311,17 @@ with col_left:
             if not st.session_state.analysis_done:
                 analyze_clicked = st.button(f"🔍 Analyze Viral Moments (Extract {num_clips} clips)")
                 if analyze_clicked:
-                    if not api_key:
-                        st.error("Please enter a Gemini API Key in the sidebar or set the GEMINI_API_KEY environment variable.")
+                    if not api_key.strip():
+                        st.error("🚨 Gemini API Key is required. Please enter your personal Gemini API Key in the sidebar to proceed.")
                     else:
                         progress_box = st.empty()
                         progress_bar = st.progress(0)
                         
                         try:
-                            # Step 1: Download Audio
-                            progress_box.info("Step 1 of 2: Downloading audio stream...")
-                            progress_bar.progress(25)
-                            audio_path = utils.download_audio(url_input, temp_dir)
-                            
-                            # Step 2: Query Gemini for Clips
-                            progress_box.info("Step 2 of 2: Gemini is transcribing & analyzing audio for viral clips...")
-                            progress_bar.progress(65)
-                            result_data = utils.find_viral_clip(audio_path, api_key, num_clips=num_clips, model=selected_model)
+                            # Query Gemini for Clips (with fast YouTube transcript path)
+                            progress_box.info("Querying Gemini for viral clips (fetching transcript)...")
+                            progress_bar.progress(35)
+                            result_data = utils.find_viral_clip(url_input, api_key, num_clips=num_clips, model=selected_model, temp_dir=temp_dir)
                             
                             st.session_state.clips = result_data.get("clips", [])
                             st.session_state.analysis_done = True
@@ -379,32 +382,36 @@ with col_left:
                                 
                                 # Render process
                                 render_status = st.empty()
-                                render_progress = st.progress(0)
+                                if not api_key.strip():
+                                    render_status.error("🚨 Gemini API Key is required. Please enter your personal Gemini API Key in the sidebar to render.")
+                                    st.stop()
                                 
+                                render_progress = st.progress(0)
                                 import uuid
                                 video_id = utils.extract_youtube_id(url_input)
                                 transaction_uid = uuid.uuid4().hex[:8]
                                 transaction_id = f"{video_id}_{transaction_uid}"
                                 
                                 raw_clip = os.path.join(temp_dir, f"video_{transaction_id}_raw_{idx}.mp4")
-                                cropped_clip = os.path.join(temp_dir, f"video_{transaction_id}_cropped_{idx}.mp4")
                                 final_output = os.path.join(temp_dir, f"viral_short_{video_id}_{idx}.mp4")
                                 
                                 try:
                                     # 1. Download range
-                                    render_status.info("Step 1 of 3: Downloading segment stream...")
-                                    render_progress.progress(20)
+                                    render_status.info("Step 1 of 2: Downloading segment stream...")
+                                    render_progress.progress(25)
                                     utils.download_video_range(url_input, clip["start_seconds"], clip["end_seconds"], raw_clip)
                                     
-                                    # 2. Crop
-                                    render_status.info("Step 2 of 3: Cropping frame to 9:16 center...")
-                                    render_progress.progress(55)
-                                    utils.crop_to_vertical(raw_clip, cropped_clip)
-                                    
-                                    # 3. Subtitle overlay
-                                    render_status.info("Step 3 of 3: Burning styled hook title...")
-                                    render_progress.progress(85)
-                                    utils.burn_title(cropped_clip, clip["title"].upper(), final_output)
+                                    # 2. Combined vertical crop and subtitles burn
+                                    render_status.info("Step 2 of 2: Rendering production-style vertical short (9:16)...")
+                                    render_progress.progress(60)
+                                    utils.crop_and_burn_title(
+                                        raw_clip,
+                                        clip["title"].upper(),
+                                        api_key,
+                                        selected_model,
+                                        final_output,
+                                        highlight_color=highlight_color
+                                    )
                                     
                                     # Done
                                     render_progress.progress(100)
@@ -420,14 +427,13 @@ with col_left:
                                     else:
                                         render_status.error(f"Render failed: {e}")
                                 finally:
-                                    # Aggressively delete intermediate raw and cropped files
-                                    for p in [raw_clip, cropped_clip]:
-                                        if os.path.exists(p):
-                                            try:
-                                                os.remove(p)
-                                                print(f"Purged intermediate file: {p}")
-                                            except Exception:
-                                                pass
+                                    # Aggressively delete intermediate raw file
+                                    if os.path.exists(raw_clip):
+                                        try:
+                                            os.remove(raw_clip)
+                                            print(f"Purged intermediate file: {raw_clip}")
+                                        except Exception:
+                                            pass
 
 # RIGHT PANEL: Detailed Workspace & Player
 with col_right:

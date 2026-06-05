@@ -27,3 +27,5 @@ node_modules/
 out/
 build/
 .vercel/
+
+.vercel

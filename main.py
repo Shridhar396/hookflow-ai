@@ -109,32 +109,21 @@ def post_video_info(req: VideoInfoRequest):
 @app.post("/api/analyze")
 def post_analyze(req: AnalyzeRequest):
     api_key = get_gemini_api_key(req.api_key)
-    audio_path = None
     try:
         # Dynamically assign and clean the URL directly from the payload object
         video_url = req.url.strip()
         
-        # 1. Download audio track (utils.py generates unique filename: audio_{video_id}_{uuid}.m4a)
-        audio_path = utils.download_audio(video_url, TEMP_DIR)
-        
-        # 2. Analyze audio for viral clips
+        # Analyze using fast transcript path or internal fallback
         result = utils.find_viral_clip(
-            audio_path=audio_path,
+            url_or_path=video_url,
             api_key=api_key,
             num_clips=req.num_clips,
-            model=req.model
+            model=req.model,
+            temp_dir=TEMP_DIR
         )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gemini AI viral analysis failed: {str(e)}")
-    finally:
-        # Aggressively delete intermediate audio stream file in all cases
-        if audio_path and os.path.exists(audio_path):
-            try:
-                os.remove(audio_path)
-                print(f"Aggressively cleaned up intermediate audio: {audio_path}")
-            except Exception as cleanup_err:
-                print(f"Warning: Failed to clean up intermediate audio {audio_path}: {cleanup_err}")
 
 @app.post("/api/render")
 def post_render(req: RenderRequest):

@@ -1,0 +1,10 @@
+.venv
+bin
+temp
+test_output
+frontend/node_modules
+frontend/.next
+*.mp4
+*.m4a
+*.srt
+*.exe
